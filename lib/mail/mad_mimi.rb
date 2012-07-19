@@ -1,42 +1,72 @@
 require "madmimi"
 
+# Temporary Hack? -- For compatibility with the Mail gem: https://github.com/mikel/mail
+# Override Hash to respond to 'encoding' or else we get e.g. "NoMethodError Exception: undefined method `encoding' for {:promotion_name=>"test_promotion"}:Hash" when calling .deliver on a mail object with :mad_mimi parameters in it.
+class Hash
+  def encoding; end
+  def encode!(x); x end
+end
+
 module Mail #:nodoc:
   # Mail::MadMimi is a delivery method for <tt>Mail</tt>.
   # It uses the <tt>MadMimi</tt> library to send mail via Mad Mimi.
 
   class MadMimi
-    class Error < StandardError; end
+    cattr_accessor :api_settings
     attr_accessor :settings, :mimi
+
+    class Error < StandardError; end
+
+    # Add a new attr_accessor on ActionMailer::Base objects for storing the promotion name (which is based on the mailer's action name.)
+    if defined? ActionMailer::Base
+      ActionMailer::Base.add_delivery_method :mad_mimi, Mail::MadMimi
+
+      module SetMailerAction
+        def wrap_delivery_behavior!(*args)
+          super
+          message.class_eval { attr_accessor :mailer_action }
+          message.mailer_action = action_name
+        end
+      end
+      ActionMailer::Base.send :include, SetMailerAction
+    end
 
     # Any settings given here will be passed to Mad Mimi.
     #
     # <tt>:email</tt> and <tt>:api_key</tt> are required.
     def initialize(settings = {})
-      unless settings[:email] && settings[:api_key]
+      self.settings = settings.reverse_merge!(self.class.api_settings)
+      unless self.settings[:email] && self.settings[:api_key]
         raise Error, "Missing :email and :api_key settings"
       end
-
-      self.settings = settings
-      self.mimi = ::MadMimi.new settings[:email], settings[:api_key]
+      self.mimi = ::MadMimi.new self.settings[:email], self.settings[:api_key]
     end
 
-    def options_from_mail(mail)
-      settings.merge(
+    def deliver!(mail)
+      mad_mimi_body = setup_options_from_mail_and_get_mad_mimi_body(mail)
+      mimi.send_mail(self.settings, mad_mimi_body).tap do |response|
+        raise Error, response if response.to_i.zero?  # no transaction id
+      end
+    end
+
+
+    private
+
+    def setup_options_from_mail_and_get_mad_mimi_body(mail)
+      self.settings.merge!(
         :recipients     => mail[:to].to_s,
         :from           => mail[:from].to_s,
         :bcc            => mail[:bcc].to_s,
         :subject        => mail.subject,
         :raw_html       => html(mail),
         :raw_plain_text => text(mail)
-      ).tap do |options|
-        if mail.respond_to? :mailer_action
-          options[:promotion_name] = mail.mailer_action
-        end
+      ).reject! { |k,v| v.nil? }
 
-        options.merge!(mail[:mad_mimi].value) if mail[:mad_mimi]
-
-        options.reject! {|k,v| v.nil? }
+      if mad_mimi_options = mail[:mad_mimi].try(:decoded) # Convert back to a Hash of options via Mail::UnstructuredField#decoded
+        self.settings[:promotion_name] = mad_mimi_options.delete(:promotion_name).presence || (mail.respond_to?(:mailer_action) ? mail.mailer_action : nil)
+        return mad_mimi_options
       end
+      {}
     end
 
     def html(mail)
@@ -55,23 +85,5 @@ module Mail #:nodoc:
       end
     end
 
-    def deliver!(mail)
-      mimi.send_mail(options_from_mail(mail), {}).tap do |response|
-        raise Error, response if response.to_i.zero?  # no transaction id
-      end
-    end
-
-    if defined? ActionMailer::Base
-      ActionMailer::Base.add_delivery_method :mad_mimi, Mail::MadMimi
-
-      module SetMailerAction
-        def wrap_delivery_behavior!(*args)
-          super
-          message.class_eval { attr_accessor :mailer_action }
-          message.mailer_action = "#{self.class}.#{action_name}"
-        end
-      end
-      ActionMailer::Base.send :include, SetMailerAction
-    end
   end
 end

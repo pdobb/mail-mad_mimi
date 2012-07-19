@@ -9,7 +9,13 @@ Add to your `Gemfile`:
 
     gem "mail-mad_mimi", :require => "mail/mad_mimi"
 
+## About this fork
+
+Updated Mail::MadMimi to work with Rails 3.2.6 and fleshed out the system for passing MadMimi placeholders in with the standard ActionMailer style. I tried to stick to the original author's original intent so most of this documentation still makes sense. I added my own usage scenario, though (see "Documentation for this fork," below).
+
 ## Usage
+
+### Original Documentation:
 
     require "mail"
     require "mail/mad_mimi"
@@ -23,11 +29,40 @@ Add to your `Gemfile`:
 
     mail.deliver
 
+### Documentation for this fork (assumes the presence of at least Rails 3.2.6 on Ruby 1.9.3):
+
+`config/initializers/mail_mad_mimi.rb`
+
+    Mail::MadMimi.api_settings = {
+      :email   => <your MadMimi account email/login>,
+      :api_key => <your MadMimi account API Key>
+    }
+
+`app/mailers/user_mailer.rb`
+
+    class UserMailer < ActionMailer::Base
+      self.delivery_method = :mad_mimi
+
+      default from: "Your Name <Your Email Address>", return_path: "Your Name <Your Email Address>"
+
+      def test_promotion
+        user = User.first
+        mad_mimi_options = {firstName: user.first_name, lastName: user.last_name}
+        mad_mimi_options.merge(promotion_name: 'test_promotion') # Optional (only needed if different than the current action name).
+        mail(subject: "Test", to: user.email, mad_mimi: mad_mimi_options)
+      end
+    end
+
+`On the console`
+
+    UserMailer.test_promotion.deliver
+
+
 ## Headers and options
 
 The `:to`, `:from`, `:bcc`, and `:subject`
 headers are taken from the `Mail` object passed to
-`deliver!`
+`deliver`
 
 In addition, any hash values given as a `:mad_mimi` header are
 passed on to Mad Mimi. That means if you use the `Mail` object with
