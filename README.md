@@ -7,7 +7,7 @@ It uses the `MadMimi` library to send mail via [Mad Mimi][1].
 
 Add to your `Gemfile`:
 
-    gem "mail-mad_mimi", :require => "mail/mad_mimi"
+    gem 'mail-mad_mimi', :require => 'mail/mad_mimi', :git => 'git://github.com/pdobb/mail-mad_mimi.git'
 
 ## About this fork
 
@@ -31,14 +31,14 @@ Updated Mail::MadMimi to work with Rails 3.2.6 and fleshed out the system for pa
 
 ### Documentation for this fork (assumes the presence of at least Rails 3.2.6 on Ruby 1.9.3):
 
-`config/initializers/mail_mad_mimi.rb`
+config/initializers/mail_mad_mimi.rb
 
     Mail::MadMimi.api_settings = {
       :email   => <your MadMimi account email/login>,
       :api_key => <your MadMimi account API Key>
     }
 
-`app/mailers/user_mailer.rb`
+app/mailers/user_mailer.rb
 
     class UserMailer < ActionMailer::Base
       self.delivery_method = :mad_mimi
@@ -53,7 +53,7 @@ Updated Mail::MadMimi to work with Rails 3.2.6 and fleshed out the system for pa
       end
     end
 
-`On the console`
+On the console or in a controller, etc.
 
     UserMailer.test_promotion.deliver
 
@@ -99,6 +99,8 @@ You can then configure it in an environment file:
       :email   => "user@example.com",
       :api_key => "a1b9892611956aa13a5ab9ccf01f4966",
     }
+
+If only some of your Mailers should use the `:mad_mimi` delivery_method, this fork allows you to specify the default mad_mimi_settings in a config/initializer file. See "Documentation for this fork," above for an example.
 
 [1]: http://madmimi.com
 [2]: http://madmimi.com/developer/mailer/transactional
