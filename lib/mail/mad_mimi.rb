@@ -43,9 +43,15 @@ module Mail #:nodoc:
     end
 
     def deliver!(mail)
-      mad_mimi_body = setup_options_from_mail_and_get_mad_mimi_body(mail)
-      mimi.send_mail(self.settings, mad_mimi_body).tap do |response|
-        raise Error, response if response.to_i.zero?  # no transaction id
+      recipients = mail[:to].to_s
+
+      recipients.split(",").each do |recipient|
+        mail[:to] = recipient
+        mad_mimi_body = setup_options_from_mail_and_get_mad_mimi_body(mail)
+
+        mimi.send_mail(self.settings, mad_mimi_body).tap do |response|
+          raise Error, response if response.to_i.zero?  # no transaction id
+        end
       end
     end
 
