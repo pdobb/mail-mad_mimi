@@ -68,7 +68,7 @@ module Mail #:nodoc:
         :raw_plain_text => text(mail)
       ).reject! { |k,v| v.nil? }
 
-      if mad_mimi_options = mail[:mad_mimi].try(:decoded).clone # Convert back to a Hash of options via Mail::UnstructuredField#decoded
+      if mad_mimi_options = mail[:mad_mimi].try(:decoded).try(:clone) # Convert back to a Hash of options via Mail::UnstructuredField#decoded
         # mad_mimi_options is a clone as we will delete :promotion_name from the
         # hash but we may need it again for multiple recipients
         self.settings[:promotion_name] = mad_mimi_options.delete(:promotion_name).presence || (mail.respond_to?(:mailer_action) ? mail.mailer_action : nil)
