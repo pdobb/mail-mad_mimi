@@ -1,0 +1,2 @@
+v2.0.1
+- Updated dependency requirements on MadMimi gem to 1.0.16 (for Open SSL v1.x server update)

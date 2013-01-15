@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Grant Hollingworth"]
   s.email       = ["grant@antiflux.org"]
-  s.homepage    = "https://github.com/granth/mail-mad_mimi"
+  s.homepage    = "https://github.com/pdobb/mail-mad_mimi"
   s.summary     = "A Mad Mimi delivery method for the Ruby Mail library, with Rails 3 support."
   s.description = s.summary
 
@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 
-  s.add_runtime_dependency "madmimi", "~> 1.0.15"
+  s.add_runtime_dependency "madmimi", "~> 1.0.16"
   s.add_runtime_dependency "mail", "~> 2.2"
   s.add_development_dependency "rspec", "~> 2.6"
   s.add_development_dependency "actionmailer", "~> 3.0"
